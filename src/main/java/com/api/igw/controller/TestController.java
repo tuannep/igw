@@ -1,9 +1,12 @@
 package com.api.igw.controller;
 
 import com.api.igw.kafka.CustomKafkaMessage;
+import com.api.igw.model.DataObj;
 import com.api.igw.model.Transaction;
 import com.api.igw.repository.TransactionRepository;
+import com.api.igw.service.InquiryService;
 import com.api.igw.service.KafkaProducerService;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.Date;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/igw")
 public class TestController {
-
-    public static Logger logger = LoggerFactory.getLogger(TestController.class);
 
     @Autowired
     TransactionRepository transactionRepository;
@@ -27,11 +29,22 @@ public class TestController {
     @Autowired
     KafkaProducerService producer;
 
+    @Autowired
+    InquiryService inquiryService;
+
     @PutMapping(value ="test", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> inquiry(@RequestBody String iMessage) {
-        logger.debug("Received inquiry msg from bank client");
+        log.debug("Received inquiry msg from bank client");
         System.out.println(iMessage);
         return new ResponseEntity<>(iMessage, HttpStatus.OK);
+    }
+
+    @PutMapping(value = "/cms/iach/43", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> inquiryDAS(@RequestBody String iMessage) {
+        log.debug("Received inquiry msg from bank client");
+        System.out.println(iMessage);
+        String res = inquiryService.inquiryDAS(iMessage);
+        return new ResponseEntity<>(res, HttpStatus.OK);
     }
 
     @GetMapping(value = "/kafka")
@@ -87,5 +100,21 @@ public class TestController {
         transactionRepository.save(trans);
 
         return new ResponseEntity<>("success", HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/insertTrans")
+    public ResponseEntity<DataObj> insertTrans() {
+        Transaction trans = new Transaction();
+        trans.setXrefId("1");
+        trans.setClientId("1");
+        trans.setChannelId("ABC");
+        trans.setServiceGroupId("G1");
+        trans.setServiceId("S1");
+        trans.setTransCate("AAAA");
+        trans.setAmount(new BigDecimal(1000));
+        trans.setCreatedOn(new Date());
+        DataObj dataObj = transactionRepository.insertTrans(trans);
+
+        return new ResponseEntity<>(dataObj, HttpStatus.OK);
     }
 }
